@@ -210,7 +210,10 @@
     //结束的位置
     CMTime endTime = CMTimeMakeWithSeconds(self.endTime, videoAsset.duration.timescale);
 
-    CMTimeRange videoTimeRange = CMTimeRangeMake(startTime, endTime);
+//    CMTimeRange videoTimeRange = CMTimeRangeMake(startTime, endTime);
+
+    CMTimeRange videoTimeRange = CMTimeRangeMake(CMTimeMake(self.startTime * 60,60), CMTimeSubtract(CMTimeMake(self.endTime * 60,60),CMTimeMake(self.startTime * 60,60)));
+
 
     AVAssetTrack *assetVideoTrack = nil;
     AVAssetTrack *assetAudioTrack = nil;
