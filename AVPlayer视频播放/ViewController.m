@@ -83,6 +83,7 @@
     //通过KVO来观察status属性的变化，来获得播放之前的错误信息
     [self.item addObserver:self forKeyPath:@"status" options:NSKeyValueObservingOptionNew context:nil];
 
+    // 加载界面所需的控件
     [self.view addSubview:self.replayBtn];
     [self.view addSubview:self.stopBtn];
     [self.view addSubview:self.captureBtn];
@@ -111,6 +112,10 @@
         self.avSlider.value = time;
         //当视频结束时，停止定时器并将标志位置为 NO，以便点击play按钮时，可以直接播放视频，但是要注意在slide的事件下处理定时器
         if (self.avSlider.value == self.item.duration.value/self.item.duration.timescale){
+
+//            [self.mPlayer seekToTime:kCMTimeZero];
+//            self.avSlider.value = 0;
+
             [self.timer invalidate];
             self.replayBtn.enabled = YES;
             self.replayBtn.backgroundColor = [UIColor redColor];
@@ -192,21 +197,29 @@
 
     NSString *path = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"vedio.MP4"];
     NSURL *mediaURL = [NSURL fileURLWithPath:path];
+
+//  音视频来源
     AVURLAsset* videoAsset = [[AVURLAsset alloc] initWithURL:mediaURL options:nil];
 
-    //创建AVMutableComposition对象来添加视频音频资源的AVMutableCompositionTrack
+    //创建可变的音视频组合
     AVMutableComposition* mixComposition = [AVMutableComposition composition];
 
-
+    // CMTime  描述多媒体帧数和播放速率的结构体
     //开始位置
     CMTime startTime = CMTimeMakeWithSeconds(self.startTime, videoAsset.duration.timescale);
     //结束的位置
     CMTime endTime = CMTimeMakeWithSeconds(self.endTime, videoAsset.duration.timescale);
+
     CMTimeRange videoTimeRange = CMTimeRangeMake(startTime, endTime);
 
     AVAssetTrack *assetVideoTrack = nil;
     AVAssetTrack *assetAudioTrack = nil;
+// tracksWithMediaType 方法会根据指定的媒体类型返回一个track数组，数组中包含着Asset中所有指定媒体类型的track。如果Asset中没有这个媒体类型的track，返回一个空数组。AVMediaFormat中一共定义了8种媒体类型
+/**
+ AVMediaTypeVideo   AVMediaTypeAudio   AVMediaTypeText  AVMediaTypeClosedCaption  AVMediaTypeSubtitle  AVMediaTypeTimecode  AVMediaTypeMetadata  AVMediaTypeMuxed
+ */
 
+//    Check if the asset contains video and audio tracks
     if ([[videoAsset tracksWithMediaType:AVMediaTypeVideo] count] != 0) {
         assetVideoTrack = [videoAsset tracksWithMediaType:AVMediaTypeVideo][0];
     }
@@ -214,24 +227,30 @@
         assetAudioTrack = [videoAsset tracksWithMediaType:AVMediaTypeAudio][0];
     }
 
+
+    // Insert time range of the video and audio tracks from AVAsset
+
+//   AVMutableCompositionTrack 视频和音频的采集都需要通过这个类，我觉得可以理解为采集的一个视频或音频资源对应一个track对象
     AVMutableCompositionTrack *compositionVideoTrack = [mixComposition addMutableTrackWithMediaType:AVMediaTypeVideo preferredTrackID:kCMPersistentTrackID_Invalid];
     [compositionVideoTrack insertTimeRange:videoTimeRange ofTrack:assetVideoTrack atTime:kCMTimeZero error:nil];
-    [compositionVideoTrack setPreferredTransform:assetVideoTrack.preferredTransform];
+//    [compositionVideoTrack setPreferredTransform:assetVideoTrack.preferredTransform];
 
-
+//   AVMutableCompositionTrack 视频和音频的采集都需要通过这个类，我觉得可以理解为采集的一个视频或音频资源对应一个track对象
     AVMutableCompositionTrack *compositionAudioTrack = [mixComposition addMutableTrackWithMediaType:AVMediaTypeAudio preferredTrackID:kCMPersistentTrackID_Invalid];
     [compositionAudioTrack insertTimeRange:videoTimeRange ofTrack:assetAudioTrack atTime:kCMTimeZero error:nil];
 
-
-
-    // 创建一个输出
+    // 删除指定 部分
     CMTime acturalDuraton = CMTimeSubtract(endTime, startTime);
-    [mixComposition removeTimeRange:CMTimeRangeMake(acturalDuraton, mixComposition.duration)];
+
+//    [mixComposition removeTimeRange:CMTimeRangeMake(acturalDuraton, mixComposition.duration)];
 
     NSString *tmpFile = [NSString stringWithFormat:@"%@%@", NSTemporaryDirectory(), @"output.mov"];
     if ([[NSFileManager defaultManager] fileExistsAtPath:tmpFile]) {
         [[NSFileManager defaultManager] removeItemAtPath:tmpFile error:nil];
     }
+
+    // 创建一个输出
+    // AVAssetExportSession 用于合并你采集的视频和音频，最终会保存为一个新文件，可以设置文件的输出类型、路径，以及合并的一个状态
     AVAssetExportSession *session = [[AVAssetExportSession alloc] initWithAsset:mixComposition presetName:AVAssetExportPresetHighestQuality];
     session.outputURL = [NSURL fileURLWithPath:tmpFile];
     session.outputFileType = AVFileTypeQuickTimeMovie;
