@@ -210,9 +210,35 @@
     //结束的位置
     CMTime endTime = CMTimeMakeWithSeconds(self.endTime, videoAsset.duration.timescale);
 
-//    CMTimeRange videoTimeRange = CMTimeRangeMake(startTime, endTime);
+/*
+    CMTimeMake(a,b)    a当前第几帧, b每秒钟多少帧.当前播放时间a/b
+    CMTimeMakeWithSeconds(a,b)    a当前时间,b每秒钟多少帧.
 
-    CMTimeRange videoTimeRange = CMTimeRangeMake(CMTimeMake(self.startTime * 60,60), CMTimeSubtract(CMTimeMake(self.endTime * 60,60),CMTimeMake(self.startTime * 60,60)));
+    CMTimeMake顾名思义就是用来建立CMTime用的,
+    但是千万别误会他是拿來用在一般时间用的,
+    CMTime可是专门用來表示影片时间用的類別,
+    他的用法为: CMTimeMake(time, timeScale)
+
+    time指的就是时间(不是秒),
+    而时间要换算成秒就要看第二個参数timeScale了.
+    timeScale指的是1秒需要由几个frame组成(可以视为fps),
+    因此真正要表达的时间就會是 time / timeScale 才会是秒.
+
+ 举个例子:
+
+    CMTimeMake(60, 30);
+    CMTimeMake(30, 15);
+    在这两个例子中所表达在影片中的时间都为2秒钟,
+    但是影隔播放速速率不同, 相差了有兩倍.
+
+
+*/
+
+    //    CMTimeRange videoTimeRange = CMTimeRangeMake(startTime, endTime);  // 如果使用这句代码,注释下面的代码, 然后解开第 269 270 行代码注释,即可,两种方式都可以
+
+    CGFloat rate = 30.0;
+
+    CMTimeRange videoTimeRange = CMTimeRangeMake(CMTimeMake(self.startTime * rate,rate), CMTimeSubtract(CMTimeMake(self.endTime * rate,rate),CMTimeMake(self.startTime * rate,rate)));
 
 
     AVAssetTrack *assetVideoTrack = nil;
@@ -232,7 +258,6 @@
 
 
     // Insert time range of the video and audio tracks from AVAsset
-
 //   AVMutableCompositionTrack 视频和音频的采集都需要通过这个类，我觉得可以理解为采集的一个视频或音频资源对应一个track对象
     AVMutableCompositionTrack *compositionVideoTrack = [mixComposition addMutableTrackWithMediaType:AVMediaTypeVideo preferredTrackID:kCMPersistentTrackID_Invalid];
     [compositionVideoTrack insertTimeRange:videoTimeRange ofTrack:assetVideoTrack atTime:kCMTimeZero error:nil];
@@ -243,8 +268,7 @@
     [compositionAudioTrack insertTimeRange:videoTimeRange ofTrack:assetAudioTrack atTime:kCMTimeZero error:nil];
 
     // 删除指定 部分
-    CMTime acturalDuraton = CMTimeSubtract(endTime, startTime);
-
+//    CMTime acturalDuraton = CMTimeSubtract(endTime, startTime);
 //    [mixComposition removeTimeRange:CMTimeRangeMake(acturalDuraton, mixComposition.duration)];
 
     NSString *tmpFile = [NSString stringWithFormat:@"%@%@", NSTemporaryDirectory(), @"output.mov"];
