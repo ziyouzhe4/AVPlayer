@@ -206,13 +206,13 @@
 
     // CMTime  描述多媒体帧数和播放速率的结构体
     //开始位置
-    CMTime startTime = CMTimeMakeWithSeconds(self.startTime, videoAsset.duration.timescale);
-    //结束的位置
-    CMTime endTime = CMTimeMakeWithSeconds(self.endTime, videoAsset.duration.timescale);
+//    CMTime startTime = CMTimeMakeWithSeconds(self.startTime, videoAsset.duration.timescale);
+//    //结束的位置
+//    CMTime endTime = CMTimeMakeWithSeconds(self.endTime, videoAsset.duration.timescale);
 
 /*
     CMTimeMake(a,b)    a当前第几帧, b每秒钟多少帧.当前播放时间a/b
-    CMTimeMakeWithSeconds(a,b)    a当前时间,b每秒钟多少帧.
+    CMTimeMakeWithSeconds(a,b)    a 当前时间,b 每秒钟多少帧.
 
     CMTimeMake顾名思义就是用来建立CMTime用的,
     但是千万别误会他是拿來用在一般时间用的,
@@ -234,12 +234,9 @@
 
 */
 
-    //    CMTimeRange videoTimeRange = CMTimeRangeMake(startTime, endTime);  // 如果使用这句代码,注释下面的代码, 然后解开第 269 270 行代码注释,即可,两种方式都可以
-
-    CGFloat rate = 30.0;
-
+    CGFloat rate = 60.0;
+    // 截取的range
     CMTimeRange videoTimeRange = CMTimeRangeMake(CMTimeMake(self.startTime * rate,rate), CMTimeSubtract(CMTimeMake(self.endTime * rate,rate),CMTimeMake(self.startTime * rate,rate)));
-
 
     AVAssetTrack *assetVideoTrack = nil;
     AVAssetTrack *assetAudioTrack = nil;
@@ -266,10 +263,6 @@
 //   AVMutableCompositionTrack 视频和音频的采集都需要通过这个类，我觉得可以理解为采集的一个视频或音频资源对应一个track对象
     AVMutableCompositionTrack *compositionAudioTrack = [mixComposition addMutableTrackWithMediaType:AVMediaTypeAudio preferredTrackID:kCMPersistentTrackID_Invalid];
     [compositionAudioTrack insertTimeRange:videoTimeRange ofTrack:assetAudioTrack atTime:kCMTimeZero error:nil];
-
-    // 删除指定 部分
-//    CMTime acturalDuraton = CMTimeSubtract(endTime, startTime);
-//    [mixComposition removeTimeRange:CMTimeRangeMake(acturalDuraton, mixComposition.duration)];
 
     NSString *tmpFile = [NSString stringWithFormat:@"%@%@", NSTemporaryDirectory(), @"output.mov"];
     if ([[NSFileManager defaultManager] fileExistsAtPath:tmpFile]) {
