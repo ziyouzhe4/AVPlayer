@@ -19,11 +19,12 @@
 
 @property (strong, nonatomic)AVPlayer *mPlayer;//播放器
 @property (strong, nonatomic)AVPlayerItem *item;//播放单元
-@property (strong, nonatomic)AVPlayerLayer *playerLayer;//播放界面（layer）
+@property (strong, nonatomic)AVPlayerLayer *playerLayer;//播放界面
 
 
 @property (strong, nonatomic)UISlider *avSlider;//用来现实视频的播放进度，并且通过它来控制视频的快进快退。
 @property (assign, nonatomic)BOOL isReadToPlay;//用来判断当前视频是否准备好播放。
+
 
 @property (nonatomic,strong)NSTimer *timer;
 
@@ -65,6 +66,7 @@
 //   第一步：首先我们需要一个播放的地址
     NSString *path = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"vedio.MP4"];
     NSURL *mediaURL = [NSURL fileURLWithPath:path];
+
     //    第二步：初始化一个播放单元
     self.item = [AVPlayerItem playerItemWithURL:mediaURL];
     //    第三步：初始化一个播放器对象
@@ -201,7 +203,7 @@
 //  音视频来源
     AVURLAsset* videoAsset = [[AVURLAsset alloc] initWithURL:mediaURL options:nil];
 
-    //创建可变的音视频组合
+    //创建可变的音视频组合 (AVMutableComposition对象主要是音频和视频组合)
     AVMutableComposition* mixComposition = [AVMutableComposition composition];
 
     // CMTime  描述多媒体帧数和播放速率的结构体
@@ -235,20 +237,22 @@
 */
 
     CGFloat rate = 60.0;
-    // 截取的range
+    // 截取的range(截取的时间段)
     CMTimeRange videoTimeRange = CMTimeRangeMake(CMTimeMake(self.startTime * rate,rate), CMTimeSubtract(CMTimeMake(self.endTime * rate,rate),CMTimeMake(self.startTime * rate,rate)));
 
-    AVAssetTrack *assetVideoTrack = nil;
-    AVAssetTrack *assetAudioTrack = nil;
+    AVAssetTrack *assetVideoTrack = nil; // 视频资源
+    AVAssetTrack *assetAudioTrack = nil; // 音频资源
 // tracksWithMediaType 方法会根据指定的媒体类型返回一个track数组，数组中包含着Asset中所有指定媒体类型的track。如果Asset中没有这个媒体类型的track，返回一个空数组。AVMediaFormat中一共定义了8种媒体类型
 /**
  AVMediaTypeVideo   AVMediaTypeAudio   AVMediaTypeText  AVMediaTypeClosedCaption  AVMediaTypeSubtitle  AVMediaTypeTimecode  AVMediaTypeMetadata  AVMediaTypeMuxed
  */
 
 //    Check if the asset contains video and audio tracks
+    // 判断 AVasset是否存在视频
     if ([[videoAsset tracksWithMediaType:AVMediaTypeVideo] count] != 0) {
         assetVideoTrack = [videoAsset tracksWithMediaType:AVMediaTypeVideo][0];
     }
+    // 判断 AVasset是否存在音频
     if ([[videoAsset tracksWithMediaType:AVMediaTypeAudio] count] != 0) {
         assetAudioTrack = [videoAsset tracksWithMediaType:AVMediaTypeAudio][0];
     }
@@ -256,11 +260,13 @@
 
     // Insert time range of the video and audio tracks from AVAsset
 //   AVMutableCompositionTrack 视频和音频的采集都需要通过这个类，我觉得可以理解为采集的一个视频或音频资源对应一个track对象
+    // 往AVMutableComposition对象中添加视频资源
     AVMutableCompositionTrack *compositionVideoTrack = [mixComposition addMutableTrackWithMediaType:AVMediaTypeVideo preferredTrackID:kCMPersistentTrackID_Invalid];
     [compositionVideoTrack insertTimeRange:videoTimeRange ofTrack:assetVideoTrack atTime:kCMTimeZero error:nil];
 //    [compositionVideoTrack setPreferredTransform:assetVideoTrack.preferredTransform];
 
 //   AVMutableCompositionTrack 视频和音频的采集都需要通过这个类，我觉得可以理解为采集的一个视频或音频资源对应一个track对象
+    // 往AVMutableComposition对象中添加音频资源
     AVMutableCompositionTrack *compositionAudioTrack = [mixComposition addMutableTrackWithMediaType:AVMediaTypeAudio preferredTrackID:kCMPersistentTrackID_Invalid];
     [compositionAudioTrack insertTimeRange:videoTimeRange ofTrack:assetAudioTrack atTime:kCMTimeZero error:nil];
 
@@ -339,6 +345,7 @@
     float seconds = self.avSlider.value;
     //让视频从指定的CMTime对象处播放。
     CMTime startTime = CMTimeMakeWithSeconds(seconds, self.item.currentTime.timescale);
+
 
     [self setTimer];// timer 监听进度
 
